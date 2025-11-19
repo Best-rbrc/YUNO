@@ -1,0 +1,27 @@
+# Core dependencies
+numpy
+python-dotenv
+pyyaml
+
+# Computer Vision & Face Recognition
+opencv-python
+onnxruntime
+Pillow
+deepface
+tf-keras
+
+# Audio Processing
+sounddevice
+pygame
+pyttsx3
+
+# OpenAI
+openai
+
+# Database & Backend
+supabase
+requests
+
+# Raspberry Pi / Hardware (optional)
+adafruit_blinka_raspberry_pi5_piomatter
+paho-mqtt

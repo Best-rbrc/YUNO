@@ -1,0 +1,8 @@
+# Ignore large model files
+*.onnx
+*.zip
+*.tar.gz
+
+# Keep this directory
+!.gitignore
+

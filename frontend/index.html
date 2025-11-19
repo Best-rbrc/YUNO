@@ -1,0 +1,1334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yuno - Smart Person Database</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            overflow-x: hidden;
+            background: #0a0a0a;
+            color: #ffffff;
+        }
+
+        /* Landing Page Styles */
+        #landingPage {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+            position: relative;
+            overflow: hidden;
+        }
+
+        #landingPage::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                radial-gradient(circle at 20% 50%, rgba(255,255,255,0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(255,255,255,0.1) 0%, transparent 50%);
+            animation: pulse 8s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.8; }
+        }
+
+        .landing-content {
+            position: relative;
+            z-index: 1;
+            text-align: center;
+            padding: 2rem;
+            animation: fadeInUp 1s ease-out;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .yuno-logo {
+            font-size: 8rem;
+            font-weight: 900;
+            background: linear-gradient(135deg, #fff 0%, rgba(255,255,255,0.8) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: -0.02em;
+            margin-bottom: 1rem;
+            text-shadow: 0 0 80px rgba(255,255,255,0.3);
+            animation: glow 3s ease-in-out infinite alternate;
+        }
+
+        @keyframes glow {
+            from { filter: drop-shadow(0 0 20px rgba(255,255,255,0.3)); }
+            to { filter: drop-shadow(0 0 40px rgba(255,255,255,0.5)); }
+        }
+
+        .yuno-tagline {
+            font-size: 1.5rem;
+            font-weight: 300;
+            margin-bottom: 3rem;
+            opacity: 0.95;
+            letter-spacing: 0.05em;
+        }
+
+        .sign-in-button {
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 1rem 3rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .sign-in-button::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        .sign-in-button:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        .sign-in-button:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.05);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+
+        .sign-in-button:active {
+            transform: scale(0.98);
+        }
+
+        .sign-in-button span {
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Dashboard Styles */
+        #dashboard {
+            display: none;
+            min-height: 100vh;
+            background: linear-gradient(180deg, #0a0a0a 0%, #1a1a2e 100%);
+            padding: 2rem;
+        }
+
+        #dashboard.active {
+            display: block;
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .dashboard-header {
+            max-width: 1400px;
+            margin: 0 auto 4rem;
+            padding: 3rem 0;
+            position: relative;
+        }
+
+        .dashboard-header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 3rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .dashboard-title-section {
+            flex: 1;
+        }
+
+        .dashboard-icon {
+            display: none;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .dashboard-title {
+            font-size: 3.5rem;
+            font-weight: 900;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            line-height: 1.2;
+            margin-bottom: 1rem;
+            letter-spacing: -0.02em;
+        }
+
+        .dashboard-subtitle {
+            font-size: 1.25rem;
+            color: rgba(255,255,255,0.7);
+            margin-bottom: 1.5rem;
+            font-weight: 300;
+            line-height: 1.6;
+        }
+
+        .dashboard-stats {
+            display: flex;
+            gap: 2rem;
+            margin-top: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            background: rgba(255,255,255,0.03);
+            padding: 0.75rem 1.25rem;
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.05);
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+
+        .stat-item:hover {
+            background: rgba(255,255,255,0.05);
+            border-color: rgba(102,126,234,0.3);
+            transform: translateY(-2px);
+        }
+
+        .stat-icon {
+            display: none;
+        }
+
+        .stat-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            line-height: 1;
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            color: rgba(255,255,255,0.5);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-top: 0.25rem;
+        }
+
+        .dashboard-decorative {
+            position: absolute;
+            top: -50px;
+            right: -50px;
+            width: 300px;
+            height: 300px;
+            background: radial-gradient(circle, rgba(102,126,234,0.1) 0%, transparent 70%);
+            border-radius: 50%;
+            filter: blur(40px);
+            animation: pulse 4s ease-in-out infinite;
+        }
+
+        .header-highlight {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(102,126,234,0.15);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            border: 1px solid rgba(102,126,234,0.2);
+            font-size: 0.85rem;
+            margin-top: 1rem;
+            backdrop-filter: blur(10px);
+            color: rgba(255,255,255,0.8);
+        }
+
+        .sparkle {
+            display: none;
+        }
+
+        .interactive-hint {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: rgba(255,255,255,0.6);
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+            font-style: italic;
+        }
+
+        .cursor-pointer {
+            display: none;
+        }
+
+        .persons-grid {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 2rem;
+        }
+
+        .person-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+        }
+
+        .person-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(102,126,234,0.1) 0%, rgba(118,75,162,0.1) 100%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .person-card:hover::before {
+            opacity: 1;
+        }
+
+        .person-card:hover {
+            transform: translateY(-10px) scale(1.02);
+            border-color: rgba(102,126,234,0.5);
+            box-shadow: 0 20px 60px rgba(102,126,234,0.3);
+        }
+
+        .person-image-container {
+            width: 100%;
+            height: 300px;
+            background: rgba(255,255,255,0.05);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .person-image-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.5s ease;
+        }
+
+        .person-card:hover .person-image-container img {
+            transform: scale(1.1);
+        }
+
+        .person-image-placeholder {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem;
+            background: linear-gradient(135deg, rgba(102,126,234,0.2) 0%, rgba(118,75,162,0.2) 100%);
+            color: rgba(255,255,255,0.4);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            text-align: center;
+            padding: 1rem;
+        }
+
+        .person-card-content {
+            padding: 1.5rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .person-name {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            color: #fff;
+        }
+
+        .person-id {
+            font-size: 0.85rem;
+            color: rgba(255,255,255,0.5);
+            margin-bottom: 1rem;
+        }
+
+        .person-context-preview {
+            font-size: 0.9rem;
+            color: rgba(255,255,255,0.7);
+            line-height: 1.6;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        /* Modal Styles */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.9);
+            backdrop-filter: blur(10px);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: linear-gradient(135deg, rgba(26,26,46,0.95) 0%, rgba(10,10,10,0.95) 100%);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 24px;
+            max-width: 800px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            position: relative;
+            animation: slideUp 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 1.5rem;
+            right: 1.5rem;
+            background: rgba(255,255,255,0.1);
+            border: none;
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            z-index: 1001;
+        }
+
+        .modal-close:hover {
+            background: rgba(255,255,255,0.2);
+            transform: rotate(90deg);
+        }
+
+        .modal-header {
+            padding: 2rem;
+            padding-top: 3rem;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .modal-header-image {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin: 0 auto 1.5rem;
+            display: block;
+            border: 4px solid rgba(102,126,234,0.3);
+            box-shadow: 0 10px 30px rgba(102,126,234,0.3);
+        }
+
+        .modal-header-image-placeholder {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            margin: 0 auto 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            background: linear-gradient(135deg, rgba(102,126,234,0.2) 0%, rgba(118,75,162,0.2) 100%);
+            border: 4px solid rgba(102,126,234,0.3);
+            color: rgba(255,255,255,0.4);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            text-align: center;
+            padding: 1rem;
+        }
+
+        .modal-name {
+            font-size: 2.5rem;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .modal-id {
+            text-align: center;
+            color: rgba(255,255,255,0.5);
+            font-size: 0.9rem;
+        }
+
+        .modal-body {
+            padding: 2rem;
+        }
+
+        .modal-section-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: rgba(255,255,255,0.9);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .modal-context {
+            font-size: 1rem;
+            line-height: 1.8;
+            color: rgba(255,255,255,0.8);
+            white-space: normal;
+            background: rgba(255,255,255,0.03);
+            padding: 1.5rem;
+            border-radius: 12px;
+            border-left: 3px solid #667eea;
+        }
+        .context-entry { 
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 10px;
+            padding: 1rem 1.25rem;
+            margin-bottom: 0.75rem;
+        }
+        .context-entry-header {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            gap: 1rem;
+            margin-bottom: 0.5rem;
+        }
+        .context-entry-title {
+            font-weight: 600;
+            color: rgba(255,255,255,0.95);
+        }
+        .context-entry-meta {
+            font-size: 0.8rem;
+            color: rgba(255,255,255,0.55);
+        }
+        .context-entry-body { 
+            color: rgba(255,255,255,0.85);
+            white-space: pre-wrap;
+        }
+
+        .modal-actions {
+            padding: 2rem;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-end;
+        }
+
+        .modal-button {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .modal-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+
+        .modal-button:active {
+            transform: translateY(0);
+        }
+
+        .modal-button-edit {
+            background: rgba(102,126,234,0.2);
+            color: #667eea;
+            border: 1px solid rgba(102,126,234,0.3);
+        }
+
+        .modal-button-edit:hover {
+            background: rgba(102,126,234,0.3);
+            border-color: rgba(102,126,234,0.5);
+        }
+
+        .modal-button-delete {
+            background: rgba(255, 77, 77, 0.2);
+            color: #ff6b6b;
+            border: 1px solid rgba(255, 77, 77, 0.3);
+        }
+
+        .modal-button-delete:hover {
+            background: rgba(255, 77, 77, 0.3);
+            border-color: rgba(255, 77, 77, 0.5);
+        }
+
+        .modal-button-save {
+            background: rgba(76, 175, 80, 0.2);
+            color: #4caf50;
+            border: 1px solid rgba(76, 175, 80, 0.3);
+        }
+
+        .modal-button-save:hover {
+            background: rgba(76, 175, 80, 0.3);
+            border-color: rgba(76, 175, 80, 0.5);
+        }
+
+        .modal-button-cancel {
+            background: rgba(255,255,255,0.05);
+            color: rgba(255,255,255,0.7);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .modal-button-cancel:hover {
+            background: rgba(255,255,255,0.1);
+        }
+
+        .edit-form {
+            display: none;
+        }
+
+        .edit-form.active {
+            display: block;
+        }
+
+        .edit-form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .edit-form-label {
+            display: block;
+            font-size: 0.9rem;
+            color: rgba(255,255,255,0.7);
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .edit-form-input,
+        .edit-form-textarea {
+            width: 100%;
+            padding: 0.75rem;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px;
+            color: #fff;
+            font-size: 1rem;
+            font-family: inherit;
+            transition: all 0.3s ease;
+        }
+
+        .edit-form-input:focus,
+        .edit-form-textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            background: rgba(255,255,255,0.08);
+        }
+
+        .edit-form-textarea {
+            min-height: 200px;
+            resize: vertical;
+        }
+
+        .delete-confirmation {
+            display: none;
+            padding: 2rem;
+            text-align: center;
+            background: rgba(255, 77, 77, 0.1);
+            border-radius: 12px;
+            margin: 1.5rem 0;
+            border: 1px solid rgba(255, 77, 77, 0.2);
+        }
+
+        .delete-confirmation.active {
+            display: block;
+        }
+
+        .delete-confirmation-text {
+            color: rgba(255,255,255,0.9);
+            margin-bottom: 1.5rem;
+            font-size: 1rem;
+            line-height: 1.6;
+        }
+
+        .view-mode {
+            display: block;
+        }
+
+        .view-mode.hidden {
+            display: none;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 4rem;
+            color: rgba(255,255,255,0.6);
+        }
+
+        .loading-spinner {
+            border: 3px solid rgba(255,255,255,0.1);
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error-message {
+            background: rgba(255, 77, 77, 0.2);
+            border: 1px solid rgba(255, 77, 77, 0.3);
+            color: #ff6b6b;
+            padding: 1.5rem;
+            border-radius: 12px;
+            text-align: center;
+            margin: 2rem;
+        }
+
+        /* Scrollbar Styling */
+        ::-webkit-scrollbar {
+            width: 10px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(255,255,255,0.05);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(102,126,234,0.5);
+            border-radius: 5px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(102,126,234,0.7);
+        }
+
+        @media (max-width: 768px) {
+            .yuno-logo {
+                font-size: 5rem;
+            }
+            
+            .persons-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .dashboard-header-content {
+                flex-direction: column;
+                gap: 2rem;
+            }
+            
+            .dashboard-title {
+                font-size: 2.5rem;
+            }
+            
+            .dashboard-subtitle {
+                font-size: 1.1rem;
+            }
+            
+            .dashboard-stats {
+                width: 100%;
+                justify-content: space-between;
+            }
+            
+            .dashboard-decorative {
+                width: 200px;
+                height: 200px;
+                top: -30px;
+                right: -30px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Landing Page -->
+    <div id="landingPage">
+        <div class="landing-content">
+            <div class="yuno-logo">YUNO</div>
+            <div class="yuno-tagline">Smart Person Recognition & Database</div>
+            <button class="sign-in-button" onclick="showDashboard()">
+                <span>Enter Dashboard</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Dashboard -->
+    <div id="dashboard">
+        <div class="dashboard-header">
+            <div class="dashboard-decorative"></div>
+            <div class="dashboard-header-content">
+                <div class="dashboard-title-section">
+                    <div class="dashboard-title">Your People</div>
+                    <div class="dashboard-subtitle">
+                        Every person you've met, remembered.<br>
+                        Click any card to explore their story.
+                    </div>
+                    <div class="header-highlight">
+                        <span>Intelligent Recognition System</span>
+                    </div>
+                    <div class="interactive-hint">
+                        <span>Explore below</span>
+                    </div>
+                </div>
+                <div class="dashboard-stats" id="dashboardStats">
+                    <div class="stat-item">
+                        <div class="stat-info">
+                            <div class="stat-value" id="totalPersons">0</div>
+                            <div class="stat-label">People</div>
+                        </div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-info">
+                            <div class="stat-value" id="totalContext">0</div>
+                            <div class="stat-label">Memories</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="loading" class="loading">
+            <div class="loading-spinner"></div>
+            <div>Loading persons...</div>
+        </div>
+
+        <div id="error" class="error-message" style="display: none;"></div>
+        
+        <div id="personsContainer" class="persons-grid"></div>
+    </div>
+
+    <!-- Modal for Person Details -->
+    <div id="modalOverlay" class="modal-overlay" onclick="closeModal(event)">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <button class="modal-close" onclick="closeModal()">&times;</button>
+            <div id="modalContent"></div>
+        </div>
+    </div>
+
+    <!-- Supabase JS Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <script>
+        // Configuration
+        const SUPABASE_URL = 'https://dbixececjdtbomjeuxwe.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRiaXhlY2VjamR0Ym9tamV1eHdlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE3MzEzMjgsImV4cCI6MjA3NzMwNzMyOH0.zXqtJSMiLNwc2V0N71NR1HJ2W7jY6GBJAFfgs2qs9NE';
+
+        // Initialize Supabase client
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // Show Dashboard
+        function showDashboard() {
+            const landingPage = document.getElementById('landingPage');
+            const dashboard = document.getElementById('dashboard');
+            
+            landingPage.style.animation = 'fadeOut 0.5s ease-out';
+            setTimeout(() => {
+                landingPage.style.display = 'none';
+                dashboard.classList.add('active');
+                fetchPersons();
+            }, 500);
+        }
+
+        // Extract bucket and path from photo URL
+        function extractStoragePath(photoUrl) {
+            if (!photoUrl) return null;
+            const match = photoUrl.match(/\/storage\/v1\/object\/(public|sign)\/([^\/]+)\/(.+)$/);
+            if (match) {
+                return {
+                    bucket: match[2],
+                    path: match[3].split('?')[0],
+                    isPublic: match[1] === 'public'
+                };
+            }
+            return null;
+        }
+
+        // Get accessible image URL
+        async function getImageUrl(photoUrl) {
+            if (!photoUrl) return null;
+            const storageInfo = extractStoragePath(photoUrl);
+            if (!storageInfo) return photoUrl;
+
+            try {
+                const { data, error } = await supabase.storage
+                    .from(storageInfo.bucket)
+                    .createSignedUrl(storageInfo.path, 3600);
+
+                if (error) {
+                    if (storageInfo.isPublic) {
+                        return photoUrl;
+                    }
+                    console.error('Error creating signed URL:', error);
+                    return photoUrl;
+                }
+                return data.signedUrl;
+            } catch (error) {
+                console.error('Error getting image URL:', error);
+                return photoUrl;
+            }
+        }
+
+        // Fetch all persons
+        async function fetchPersons() {
+            const loadingDiv = document.getElementById('loading');
+            const errorDiv = document.getElementById('error');
+            const container = document.getElementById('personsContainer');
+
+            try {
+                const { data: persons, error } = await supabase
+                    .from('persons')
+                    .select('*');
+
+                if (error) {
+                    throw new Error(`Error fetching persons: ${error.message}`);
+                }
+                
+                loadingDiv.style.display = 'none';
+                
+                if (!persons || persons.length === 0) {
+                    container.innerHTML = '<div class="error-message">No persons found in the database.</div>';
+                    return;
+                }
+
+                // Process persons and get image URLs
+                const personsWithImages = await Promise.all(
+                    persons.map(async (person) => {
+                        const imageUrl = await getImageUrl(person.photo_url);
+                        return { ...person, imageUrl };
+                    })
+                );
+
+                // Display persons
+                container.innerHTML = personsWithImages.map(person => createPersonCard(person)).join('');
+                
+                // Update stats
+                updateStats(personsWithImages);
+                
+            } catch (error) {
+                loadingDiv.style.display = 'none';
+                errorDiv.style.display = 'block';
+                errorDiv.innerHTML = `
+                    <strong>Error loading persons:</strong><br>
+                    ${error.message}<br>
+                    <button class="sign-in-button" onclick="fetchPersons()" style="margin-top: 1rem;">Retry</button>
+                `;
+                console.error('Error fetching persons:', error);
+            }
+        }
+
+        // Create person card
+        function createPersonCard(person) {
+            const photoUrl = person.imageUrl || person.photo_url || '';
+            const name = person.name || 'Unnamed';
+            const context = person.context || 'No context available.';
+            const personId = person.id || 'N/A';
+            const preview = context.length > 150 ? context.substring(0, 150) + '...' : context;
+
+            return `
+                <div class="person-card" onclick="openModal(${JSON.stringify(person).replace(/"/g, '&quot;')})">
+                    <div class="person-image-container">
+                        ${photoUrl 
+                            ? `<img src="${photoUrl}" alt="${escapeHtml(name)}" onerror="this.parentElement.innerHTML='<div class=\\'person-image-placeholder\\'>No Image</div>'">`
+                            : '<div class="person-image-placeholder">No Image</div>'
+                        }
+                    </div>
+                    <div class="person-card-content">
+                        <div class="person-name">${escapeHtml(name)}</div>
+                        <div class="person-id">ID: ${personId}</div>
+                        <div class="person-context-preview">${escapeHtml(preview)}</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Store current person data for editing
+        let currentPersonData = null;
+
+        // Open modal with person details
+        function openModal(person) {
+            currentPersonData = person;
+            const modalOverlay = document.getElementById('modalOverlay');
+            const modalContent = document.getElementById('modalContent');
+            const photoUrl = person.imageUrl || person.photo_url || '';
+            const name = person.name || 'Unnamed';
+            const context = person.context || 'No context available.';
+            const personId = person.id || 'N/A';
+            const createdAt = person.created_at ? new Date(person.created_at).toLocaleDateString('en-US', { 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+            }) : '';
+
+            modalContent.innerHTML = `
+                <div class="modal-header">
+                    ${photoUrl 
+                        ? `<img src="${photoUrl}" alt="${escapeHtml(name)}" class="modal-header-image" onerror="this.replaceWith(function(){const d=document.createElement('div'); d.className='modal-header-image-placeholder'; d.innerHTML='No Image'; return d;}())">`
+                        : '<div class="modal-header-image-placeholder">No Image</div>'
+                    }
+                    <div class="modal-name">${escapeHtml(name)}</div>
+                    <div class="modal-id">ID: ${personId} ${createdAt ? '• Added on ' + createdAt : ''}</div>
+                </div>
+                <div class="modal-body">
+                    <div class="view-mode" id="viewMode">
+                        <div class="modal-section-title">Context & Information</div>
+                        <div class="modal-context" id="viewContext"></div>
+                    </div>
+                    <div class="edit-form" id="editForm">
+                        <div class="edit-form-group">
+                            <label class="edit-form-label" for="editName">Name</label>
+                            <input type="text" id="editName" class="edit-form-input" value="${escapeHtml(name)}">
+                        </div>
+                        <div class="edit-form-group">
+                            <label class="edit-form-label" for="editContext">Context & Information</label>
+                            <textarea id="editContext" class="edit-form-textarea">${escapeHtml(context)}</textarea>
+                        </div>
+                    </div>
+                    <div class="delete-confirmation" id="deleteConfirmation">
+                        <div class="delete-confirmation-text">
+                            Are you sure you want to delete <strong>${escapeHtml(name)}</strong>?<br>
+                            This action cannot be undone.
+                        </div>
+                        <div style="display: flex; gap: 1rem; justify-content: center;">
+                            <button class="modal-button modal-button-delete" onclick="confirmDelete()">Yes, Delete</button>
+                            <button class="modal-button modal-button-cancel" onclick="cancelDelete()">Cancel</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button class="modal-button modal-button-edit" id="editButton" onclick="toggleEdit()">Edit</button>
+                    <button class="modal-button modal-button-save" id="saveButton" onclick="savePerson()" style="display: none;">Save</button>
+                    <button class="modal-button modal-button-cancel" id="cancelButton" onclick="cancelEdit()" style="display: none;">Cancel</button>
+                    <button class="modal-button modal-button-delete" id="deleteButton" onclick="showDeleteConfirmation()">Delete</button>
+                </div>
+            `;
+            
+            modalOverlay.classList.add('active');
+            document.body.style.overflow = 'hidden';
+
+            // Render formatted context entries
+            try {
+                const viewContext = document.getElementById('viewContext');
+                viewContext.innerHTML = renderContextEntries(person);
+            } catch (e) {
+                // Fallback to plain text
+                document.getElementById('viewContext').textContent = context || 'No context available.';
+            }
+        }
+
+        // Toggle edit mode
+        function toggleEdit() {
+            const viewMode = document.getElementById('viewMode');
+            const editForm = document.getElementById('editForm');
+            const editButton = document.getElementById('editButton');
+            const saveButton = document.getElementById('saveButton');
+            const cancelButton = document.getElementById('cancelButton');
+            const deleteButton = document.getElementById('deleteButton');
+
+            viewMode.classList.add('hidden');
+            editForm.classList.add('active');
+            editButton.style.display = 'none';
+            saveButton.style.display = 'inline-block';
+            cancelButton.style.display = 'inline-block';
+            deleteButton.style.display = 'none';
+        }
+
+        // Cancel edit mode
+        function cancelEdit() {
+            const viewMode = document.getElementById('viewMode');
+            const editForm = document.getElementById('editForm');
+            const editButton = document.getElementById('editButton');
+            const saveButton = document.getElementById('saveButton');
+            const cancelButton = document.getElementById('cancelButton');
+            const deleteButton = document.getElementById('deleteButton');
+            const deleteConfirmation = document.getElementById('deleteConfirmation');
+
+            viewMode.classList.remove('hidden');
+            editForm.classList.remove('active');
+            editButton.style.display = 'inline-block';
+            saveButton.style.display = 'none';
+            cancelButton.style.display = 'none';
+            deleteButton.style.display = 'inline-block';
+            if (deleteConfirmation) deleteConfirmation.classList.remove('active');
+        }
+
+        // Save person updates
+        async function savePerson() {
+            if (!currentPersonData) return;
+
+            const nameInput = document.getElementById('editName');
+            const contextInput = document.getElementById('editContext');
+            const newName = nameInput.value.trim();
+            const newContext = contextInput.value.trim();
+
+            if (!newName) {
+                alert('Name cannot be empty');
+                return;
+            }
+
+            try {
+                const { data, error } = await supabase
+                    .from('persons')
+                    .update({
+                        name: newName,
+                        context: newContext
+                    })
+                    .eq('id', currentPersonData.id)
+                    .select();
+
+                if (error) {
+                    throw new Error(`Error updating person: ${error.message}`);
+                }
+
+                // Update local data
+                currentPersonData.name = newName;
+                currentPersonData.context = newContext;
+
+                // Update view
+                document.getElementById('viewContext').innerHTML = renderContextEntries(currentPersonData);
+                document.querySelector('.modal-name').textContent = newName;
+
+                // Exit edit mode
+                cancelEdit();
+
+                // Refresh the dashboard
+                fetchPersons();
+
+                // Show success message
+                alert('Person updated successfully!');
+            } catch (error) {
+                console.error('Error saving person:', error);
+                alert(`Error saving changes: ${error.message}`);
+            }
+        }
+
+        // Show delete confirmation
+        function showDeleteConfirmation() {
+            const deleteConfirmation = document.getElementById('deleteConfirmation');
+            const viewMode = document.getElementById('viewMode');
+            const editForm = document.getElementById('editForm');
+            
+            if (deleteConfirmation && viewMode && editForm) {
+                deleteConfirmation.classList.add('active');
+                viewMode.style.display = 'none';
+                editForm.style.display = 'none';
+            }
+        }
+
+        // Cancel delete
+        function cancelDelete() {
+            const deleteConfirmation = document.getElementById('deleteConfirmation');
+            const viewMode = document.getElementById('viewMode');
+            const editForm = document.getElementById('editForm');
+            
+            if (deleteConfirmation && viewMode && editForm) {
+                deleteConfirmation.classList.remove('active');
+                viewMode.style.display = 'block';
+            }
+        }
+
+        // Confirm and delete person
+        async function confirmDelete() {
+            if (!currentPersonData) return;
+
+            try {
+                const { error } = await supabase
+                    .from('persons')
+                    .delete()
+                    .eq('id', currentPersonData.id);
+
+                if (error) {
+                    throw new Error(`Error deleting person: ${error.message}`);
+                }
+
+                // Close modal
+                closeModal();
+
+                // Refresh the dashboard
+                fetchPersons();
+
+                // Show success message
+                alert('Person deleted successfully!');
+            } catch (error) {
+                console.error('Error deleting person:', error);
+                alert(`Error deleting person: ${error.message}`);
+            }
+        }
+
+        // Close modal
+        function closeModal(event) {
+            if (event && event.target !== event.currentTarget) return;
+            const modalOverlay = document.getElementById('modalOverlay');
+            modalOverlay.classList.remove('active');
+            document.body.style.overflow = '';
+        }
+
+        // Update dashboard stats
+        function updateStats(persons) {
+            const totalPersonsEl = document.getElementById('totalPersons');
+            const totalContextEl = document.getElementById('totalContext');
+            
+            if (!totalPersonsEl || !totalContextEl) return;
+            
+            const totalPersons = persons.length;
+            const totalContext = persons.reduce((sum, person) => {
+                const contextLength = (person.context || '').length;
+                return sum + (contextLength > 0 ? 1 : 0);
+            }, 0);
+            
+            // Animate the numbers
+            animateValue(totalPersonsEl, 0, totalPersons, 1000);
+            animateValue(totalContextEl, 0, totalContext, 1000);
+        }
+        
+        // Animate number counting
+        function animateValue(element, start, end, duration) {
+            let startTimestamp = null;
+            const step = (timestamp) => {
+                if (!startTimestamp) startTimestamp = timestamp;
+                const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+                const current = Math.floor(progress * (end - start) + start);
+                element.textContent = current;
+                if (progress < 1) {
+                    window.requestAnimationFrame(step);
+                } else {
+                    element.textContent = end;
+                }
+            };
+            window.requestAnimationFrame(step);
+        }
+
+        // Escape HTML
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Helper: Render context entries professionally with timestamps
+        function renderContextEntries(person) {
+            const raw = (person.context || '').trim();
+            if (!raw) {
+                return '<div class="context-entry"><div class="context-entry-body">No context available.</div></div>';
+            }
+            const tsSource = person.updated_at || person.created_at || null;
+            const baseDate = tsSource ? new Date(tsSource) : new Date();
+            const formatDate = (d) => d.toLocaleString('de-DE', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+
+            // Split into blocks: prefer splitting on double newlines, keeping labelled sections intact
+            const blocks = raw.split(/\n\n+/).filter(Boolean);
+
+            // If it looks like one combined "Analyse/Transkript" bundle, try to group by labels
+            const entries = [];
+            let buffer = [];
+            for (const part of blocks) {
+                if (/^(Analyse:|Transkript:)/i.test(part) && buffer.length > 0) {
+                    entries.push(buffer.join('\n\n'));
+                    buffer = [part];
+                } else {
+                    buffer.push(part);
+                }
+            }
+            if (buffer.length) entries.push(buffer.join('\n\n'));
+
+            // If grouping produced nothing special, use original blocks as entries
+            const finalEntries = entries.length > 0 ? entries : blocks;
+
+            return finalEntries.map((text, idx) => {
+                const title = /^Analyse:/i.test(text) ? 'Analyse' : (/^Transkript:/i.test(text) ? 'Transkript' : `Eintrag ${idx+1}`);
+                const when = formatDate(baseDate);
+                const body = text.replace(/^Analyse:\s*/i, '').replace(/^Transkript:\s*/i, '');
+                return `
+                    <div class="context-entry">
+                        <div class="context-entry-header">
+                            <div class="context-entry-title">${escapeHtml(title)}</div>
+                            <div class="context-entry-meta">${when}</div>
+                        </div>
+                        <div class="context-entry-body">${escapeHtml(body)}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Close modal on Escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeModal();
+            }
+        });
+    </script>
+</body>
+</html>
