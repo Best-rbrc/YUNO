@@ -189,8 +189,8 @@ class ButtonHandler:
                 if camera_available:
                     enroll_person()
                 else:
-                    print("⚠️ Kamera nicht verfügbar - Demo-Modus nicht verfügbar für Enroll")
-                    print("   Bitte aktiviere die Kamera in raspi-config")
+                    print("⚠️ Enroll übersprungen - keine Kamera erkannt")
+                    print("   Enroll benötigt eine echte Kamera (kein Demo-Modus möglich).")
             elif press_count == 2:
                 # Doppel-Press → Identify
                 print("\n🔘🔘 Doppel-Press erkannt - Starte Identify...")
@@ -279,12 +279,17 @@ def start_button_listener():
     print("=" * 50)
 
     # Prüfe Kamera-Status beim Start
+    from src.camera_manager import on_raspberry_pi
     camera_available = check_camera_available()
+    camera_source = "Raspberry-Pi-Kamera" if on_raspberry_pi() else "Webcam (OpenCV)"
     if camera_available:
-        print("✅ Kamera verfügbar")
+        print(f"✅ Kamera erkannt: {camera_source}")
     else:
-        print("⚠️ Kamera nicht verfügbar - Demo-Modus wird automatisch verwendet")
-        print("   (Identify & Rizz Mode funktionieren im Demo-Modus)")
+        print(f"⚠️ Keine Kamera erkannt ({camera_source} nicht gefunden)")
+        if DEMO_AVAILABLE:
+            print("   → Identify & Rizz Mode laufen im Demo-Modus")
+        else:
+            print("   → Demo-Modus nicht verfügbar; Aufnahmen erzeugen Platzhalter-Bilder")
 
     print("=" * 50)
     print("\n⏳ Warte auf Input... (Ctrl+C zum Beenden)\n")

@@ -30,12 +30,11 @@ def main():
         sync_manager.sync_database()
     elif args.command == 'button':
         print("🔘 Starte Button Listener für Raspberry Pi...")
-        print("   Button:")
+        print("   Einzelner Button (GPIO 17):")
         print("     1x Press:  Enroll")
         print("     2x Press:  Identify")
-        print("   Heartbeat-Sensor (KY-039):")
-        print("     3-5s Finger:  Rizz Mode")
-        print("     6s+ Finger:    Sync")
+        print("     3x Press:  Rizz Mode")
+        print("     Halten:    Sync")
         start_button_listener()
     elif args.command == 'rizz':
         run_rizz_pipeline()
