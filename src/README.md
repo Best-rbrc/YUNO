@@ -510,14 +510,15 @@ data/
 
 **Key Features**:
 - **Button Debouncing**: Prevents multiple triggers
-- **Action Mapping**: Different actions for short/long press
-- **Background Thread**: Non-blocking button monitoring
+- **Action Mapping**: Multi-press and hold detection on a single button
+- **Background Thread**: Non-blocking button monitoring (interrupt callbacks)
 - **Camera Check**: Pre-flight camera availability test
-- **Auto-Sync**: Periodic Supabase synchronization
 
-**Actions**:
-- **Short Press**: Identify person
-- **Long Press**: Enroll new person
+**Actions** (single button, GPIO 17):
+- **1x Press**: Enroll new person
+- **2x Press**: Identify person
+- **3x Press**: Rizz Mode
+- **Hold**: Sync local database with Supabase
 
 **Technologies Used**:
 - **GPIO libraries**: RPi.GPIO or similar
