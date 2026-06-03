@@ -60,47 +60,54 @@ def run_rizz_pipeline():
             is_known = True
             person_data = get_person_by_id(match["person_id"])
     
-    # Step 3: Output context if person known, otherwise generic
-    gender = result.get('gender', '').capitalize() if result.get('gender') else 'Unknown'
+    # Step 3: Generate tips — personalized with stored context if the person is known
+    gender_raw = result.get('gender') or 'Unknown'
+    gender = gender_raw.capitalize()
+    confidence = result.get('confidence', 0.0)
     if gender.lower() == 'man':
         gender_speech = 'men'
     elif gender.lower() == 'woman':
         gender_speech = 'women'
     else:
         gender_speech = gender
-    tips_data = result.get('tips', {})
+
+    # Pull name + context (history of previous conversations) for personalization
+    person_name = person_data.get('name') if person_data else None
+    person_context = person_data.get('context') if person_data else None
+
+    tips_data = rizz.generate_tips(
+        gender_raw, confidence,
+        person_name=person_name,
+        person_context=person_context,
+    )
+    personalized = isinstance(tips_data, dict) and tips_data.get('personalized')
 
     if is_known and person_data:
         generate_and_speak_greeting(person_data)
-        speak(f"Here are some flirting tips for {gender_speech}.")
-        if isinstance(tips_data, dict) and tips_data.get('enabled', True) and tips_data.get('tips'):
-            _speak_tips_block(tips_data['tips'])
-        elif isinstance(tips_data, dict) and tips_data.get('error'):
-            speak(f"Error: {tips_data['error']}")
+        if personalized:
+            speak(f"Here are some personalized flirting tips for talking to {person_name}.")
         else:
-            speak("No specific tips available.")
+            speak(f"Here are some flirting tips for {gender_speech}.")
     else:
         speak_unknown_person()
         speak(f"Here are some general flirting tips for {gender_speech}.")
-        if isinstance(tips_data, dict) and tips_data.get('enabled', True) and tips_data.get('tips'):
-            _speak_tips_block(tips_data['tips'])
-        elif isinstance(tips_data, dict) and tips_data.get('error'):
-            speak(f"Error: {tips_data['error']}")
-        else:
-            speak("No specific tips available.")
+
+    if isinstance(tips_data, dict) and tips_data.get('enabled', True) and tips_data.get('tips'):
+        _speak_tips_block(tips_data['tips'])
+    elif isinstance(tips_data, dict) and tips_data.get('error'):
+        speak(f"Error: {tips_data['error']}")
+    else:
+        speak("No specific tips available.")
 
 
 def _speak_tips_block(tips: dict):
-    """Speaks all keys/sections from the OpenAI-generated tips dict (in order)."""
-    key_order = ['opener', 'body_language', 'conversation', 'confidence_boosters', 'red_flags']
+    """Speaks the pickup line and the short approach tips (in order)."""
+    key_order = ['pickup_line', 'approach']
     separator_map = {
-        'opener':              "Opener:",
-        'body_language':       "Body language:",
-        'conversation':        "Conversation tips:",
-        'confidence_boosters': "Confidence boosters:",
-        'red_flags':           "What to avoid:",
+        'pickup_line': "Your pickup line:",
+        'approach':    "How to play it:",
     }
     for key in key_order:
         if tips.get(key):
-            lead = separator_map.get(key, key.capitalize()+':')
+            lead = separator_map.get(key, key.capitalize() + ':')
             speak(f"{lead} {tips[key]}")
