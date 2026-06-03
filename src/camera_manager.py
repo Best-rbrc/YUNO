@@ -267,10 +267,12 @@ def take_photo(save_path: str) -> str:
 					# OpenCV uses BGR; convert to RGB before saving with PIL
 					frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 					img = Image.fromarray(frame)
-					
-					# Rotiere um 180 Grad
-					img = img.rotate(180, expand=False)
-					
+
+					# Hinweis: KEINE 180°-Rotation hier. Dieser Pfad wird für
+					# USB-/Mac-Webcams verwendet, die bereits aufrecht liefern.
+					# Die 180°-Drehung gilt nur für die physisch verkehrt herum
+					# montierte Raspberry-Pi-Kamera (rpicam-/libcamera-Pfad oben).
+
 					# Additional PIL brightness enhancement if still needed
 					enhancer = ImageEnhance.Brightness(img)
 					img = enhancer.enhance(1.2)
