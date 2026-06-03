@@ -123,22 +123,44 @@ class ButtonGestureLogger:
 
 
 def run_gpio(pin: int) -> None:
-    """Echter Button über GPIO (Raspberry Pi)."""
+    """Echter Button über GPIO (Raspberry Pi).
+
+    Phantom-Edge Schutz:
+      Auf Pi 5 (lgpio-Backend) feuert add_event_detect manchmal direkt nach
+      Init einen "Phantom"-Edge, der den ersten echten Press verschluckt.
+      Wir lösen das mit:
+        1. 300ms Grace-Period nach Setup, bevor wir Events akzeptieren.
+        2. Falls trotzdem ein einsamer UP-Edge ohne vorheriges DOWN
+           kommt, behandeln wir ihn als kurzen Press (start_time = now).
+    """
     logger = ButtonGestureLogger()
 
     GPIO.setmode(GPIO.BCM)
     GPIO.setup(pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
+    # Grace-Period: Phantom-Edges direkt nach Setup ignorieren
+    ready_at = time.time() + 0.3
+
     def on_edge(channel):
+        if time.time() < ready_at:
+            _log("⏭️  (Phantom-Edge bei Init ignoriert)")
+            return
         # PUD_UP: LOW = gedrückt, HIGH = losgelassen
         if GPIO.input(pin) == GPIO.LOW:
             logger.button_down()
         else:
+            # Falls UP ohne DOWN kommt (Bounce hat DOWN verschluckt) →
+            # als Press werten: start_time auf jetzt setzen, ergibt 0s Dauer
+            with logger.lock:
+                if logger._press_start_time is None:
+                    _log("⚠️  UP ohne DOWN — synthetisiere Press")
+                    logger._press_start_time = time.time()
             logger.button_up()
 
     GPIO.add_event_detect(pin, GPIO.BOTH, callback=on_edge, bouncetime=50)
 
     _log(f"✅ GPIO-Modus aktiv – Button an GPIO {pin} (BCM)")
+    _log(f"   (Phantom-Edge Schutz: 300ms Grace-Period + UP-without-DOWN handling)")
     _log("Drücke den Button: 1x / 2x / 3x / Halten. Strg+C zum Beenden.")
     _log("-" * 50)
     try:
