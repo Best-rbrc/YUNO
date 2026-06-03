@@ -68,12 +68,19 @@ class ButtonHandler:
         self.is_processing = False
         self._press_start_time = None
         self.sync_manager = SyncManager(auto_sync_on_start=False)
+        # Phantom-Edge Schutz (Pi 5 / lgpio): nach add_event_detect feuert
+        # manchmal ein Init-Edge, der den ersten echten Press verschluckt.
+        # 300 ms Grace-Period nach Setup; Edges in diesem Fenster werden
+        # verworfen. Plus: lone UP-Edges ohne DOWN werden als 0-s Press
+        # synthetisiert (Bounce hat DOWN gefressen).
+        self._ready_at = 0.0
 
         if HAS_GPIO:
             GPIO.setmode(GPIO.BCM)
             GPIO.setup(self.button_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
             # Beide Flanken überwachen, um zwischen kurzem Druck und Halten
             # unterscheiden zu können
+            self._ready_at = time.time() + 0.3
             GPIO.add_event_detect(self.button_pin, GPIO.BOTH,
                                 callback=self._on_edge, bouncetime=50)
             print(f"✅ Button-Handler initialisiert auf GPIO Pin {self.button_pin}")
@@ -84,11 +91,19 @@ class ButtonHandler:
         """Callback bei jeder Flanke - unterscheidet Drücken und Loslassen."""
         if not HAS_GPIO:
             return
+        # Grace-Period: Phantom-Edges direkt nach Setup verwerfen
+        if time.time() < self._ready_at:
+            return
         # PUD_UP: LOW = gedrückt, HIGH = losgelassen
         pressed = (GPIO.input(self.button_pin) == GPIO.LOW)
         if pressed:
             self._button_down()
         else:
+            # Falls UP ohne DOWN kommt (Bounce hat DOWN verschluckt) →
+            # als 0-s Press werten: start_time auf jetzt setzen
+            with self.lock:
+                if self._press_start_time is None and not self.is_processing:
+                    self._press_start_time = time.time()
             self._button_up()
 
     def _button_down(self):
