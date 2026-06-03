@@ -7,6 +7,7 @@ personalized flirting tips based on the detected gender of the person in the cam
 
 import os
 import time
+import random
 import logging
 import cv2
 import numpy as np
@@ -140,20 +141,19 @@ class RizzMode:
             confidence = gender_result['confidence']
             
             logger.info(f"✅ Gender detected: {gender} (confidence: {confidence:.1f}%)")
-            
-            # Generate flirting tips
-            tips = self._generate_flirting_tips(gender, confidence)
-            
+
+            # Note: tips are NOT generated here. The caller (rizz_orchestrator)
+            # first recognizes the person, then calls generate_tips() with the
+            # stored context so the advice is personalized.
             result = {
                 "success": True,
                 "gender": gender,
                 "confidence": confidence,
                 "image_path": photo_path,
                 "face_path": str(face_path),
-                "tips": tips,
                 "timestamp": timestamp
             }
-            
+
             return result
             
         except Exception as e:
@@ -163,14 +163,27 @@ class RizzMode:
                 "error": str(e)
             }
     
-    def _generate_flirting_tips(self, gender: str, confidence: float) -> Dict[str, Any]:
+    def generate_tips(self, gender: str, confidence: float,
+                      person_name: str = None, person_context: str = None) -> Dict[str, Any]:
+        """Öffentlicher Einstieg für die Tipp-Generierung.
+
+        Wird vom Orchestrator NACH der Personen-Erkennung aufgerufen, damit der
+        gespeicherte Kontext (frühere Gespräche) in die Tipps einfließen kann.
         """
-        Generate personalized flirting tips based on detected gender.
-        
+        return self._generate_flirting_tips(gender, confidence, person_name, person_context)
+
+    def _generate_flirting_tips(self, gender: str, confidence: float,
+                                person_name: str = None, person_context: str = None) -> Dict[str, Any]:
+        """
+        Generate personalized flirting tips based on detected gender AND, if the
+        person is known, the context stored from previous conversations.
+
         Args:
             gender: Detected gender ("Man" or "Woman")
             confidence: Detection confidence (0-100)
-            
+            person_name: Known person's name (None/"unknown" if not recognized)
+            person_context: Stored context/history from previous conversations
+
         Returns:
             Dictionary with flirting tips and advice
         """
@@ -181,41 +194,75 @@ class RizzMode:
                     "enabled": False,
                     "message": f"Rizz mode is disabled for {gender}"
                 }
-            
+
             # Create gender-specific prompt
             style = self.gender_settings[gender]["style"]
             approach = self.gender_settings[gender]["approach"]
-            
+
+            # Build an optional personalization block from stored context
+            has_name = bool(person_name and person_name.strip() and person_name.strip().lower() != "unknown")
+            has_context = bool(person_context and person_context.strip())
+            if has_context:
+                name_part = f" named {person_name.strip()}" if has_name else ""
+                person_block = (
+                    f"This is someone{name_part} the user has met before. "
+                    "Here is context from previous conversations with this exact person:\n"
+                    f"\"\"\"\n{person_context.strip()}\n\"\"\"\n"
+                    "PERSONALIZE the tips using this context: reference their interests, shared topics, "
+                    "or past interactions so the opener and conversation tips are specific to THIS person, "
+                    "not generic. Only use facts supported by the context above — do not invent details. "
+                )
+            elif has_name:
+                person_block = f"The person's name is {person_name.strip()}; you may use it naturally in the opener. "
+            else:
+                person_block = ""
+
+            # Randomize the vibe each call so tips are never the same twice
+            vibes = [
+                "filthy and shameless, pure innuendo",
+                "dominant and teasing, makes them blush",
+                "smutty stand-up comedian energy",
+                "seductive and dangerous, dripping with want",
+                "playfully obscene, double entendres everywhere",
+                "needy and bold, says the quiet part out loud",
+                "deadpan dirty, slips in the filth with a straight face",
+                "unhinged horny but still weirdly charming",
+            ]
+            spice = random.choice(vibes)
+
             prompt = (
-                "Output your response EXCLUSIVELY as a valid JSON object – WITHOUT any introduction, explanation, follow-up, comment, or markdown blocks. JSON only!\n"
-                'Format:\n'
+                "Output your response EXCLUSIVELY as a valid JSON object – WITHOUT any introduction, explanation, comment, or markdown blocks. JSON only!\n"
+                'Use EXACTLY this format, no extra keys:\n'
                 '{\n'
-                '  "opener": "Your pickup line or conversation opener (concrete, situational)",\n'
-                '  "body_language": "Body language tip (precise action, no generalities)",\n'
-                '  "conversation": "Conversation flow tip (2-3 concrete questions/guides)",\n'
-                '  "confidence_boosters": "Confidence booster (practical, immediately applicable micro-actions)",\n'
-                '  "red_flags": "What you should avoid (concrete, situation-specific)"\n'
+                '  "pickup_line": "ONE bold, really spicy, raunchy pickup line (situational, surprising)",\n'
+                '  "approach": "2-3 sentences of spicy general approach / flirting tips with concrete moves. MAXIMUM 3 sentences."\n'
                 '}\n'
                 f'The person was detected as {gender} (confidence {confidence:.1f}%). '
-                'Provide at least 3 precise, respectful, SITUATIONAL flirting tips in the given format. '
-                'Avoid generic phrases like "be yourself" or "be friendly". '
-                'Use varied phrasing and avoid repeating previous responses. '
-                'Use detailed, vivid language (but short and precise), e.g. concrete observations (smile, outfit, energy), '
-                'open-ended questions with depth and small playful challenges. '
-                'All content in English.'
+                + person_block +
+                f"Today's vibe: be {spice}. "
+                'Make it REALLY SPICY: raunchy, explicit innuendo, bold and shameless, NSFW-flirty — '
+                'but always consensual and never creepy, harassing, or coercive. '
+                'The pickup_line must be situational and surprising, never a tired cliché. '
+                'The approach must be 2-3 sentences MAX — punchy and dirty-minded with concrete moves, not a clinical dating-coach lecture. '
+                'Use fresh, different wording every time. All content in English.'
             )
 
             response = client.chat.completions.create(
                 model="gpt-4o-mini",
                 messages=[
-                    {"role": "system", "content": "You are a professional wingman. You give precise, situational, respectful, and varied flirting tips in English."},
+                    {"role": "system", "content": (
+                        "You are an unfiltered, hilarious, filthy-minded wingman. You give bold, raunchy, very spicy pickup advice "
+                        "packed with explicit innuendo and wit. You're shameless and outrageous, but always consensual and never creepy, "
+                        "harassing, or coercive. When context about the specific person is provided, you tailor everything to them. "
+                        "Every response must be fresh and clearly different from any previous one."
+                    )},
                     {"role": "user", "content": prompt}
                 ],
-                temperature=1.0,
-                top_p=0.9,
-                presence_penalty=0.6,
-                frequency_penalty=0.4,
-                max_tokens=800
+                temperature=1.2,
+                top_p=0.95,
+                presence_penalty=0.8,
+                frequency_penalty=0.6,
+                max_tokens=400
             )
             
             tips_text = response.choices[0].message.content.strip()
@@ -237,7 +284,8 @@ class RizzMode:
                 "confidence": confidence,
                 "tips": tips,
                 "style": style,
-                "approach": approach
+                "approach": approach,
+                "personalized": has_context
             }
             
         except Exception as e:
@@ -331,7 +379,9 @@ if __name__ == "__main__":
         if result and result.get('success'):
             print(f"✅ Analysis successful!")
             print(f"Gender: {result['gender']} (confidence: {result['confidence']:.1f}%)")
-            print(f"Tips: {result['tips']}")
+            # Tips are generated separately (normally with person context from the DB)
+            tips = rizz.generate_tips(result['gender'], result['confidence'])
+            print(f"Tips: {tips}")
         else:
             print(f"❌ Analysis failed: {result.get('error', 'Unknown error')}")
         
