@@ -46,22 +46,22 @@ def _format_context_for_storage(analysis, transcript):
     parts = []
     
     if analysis and isinstance(analysis, dict):
-        # Format analysis dict als lesbarer Text
+        # Format analysis dict as readable text
         analysis_parts = []
         if analysis.get('name'):
             analysis_parts.append(f"Name: {analysis['name']}")
-        if analysis.get('thema'):
-            analysis_parts.append(f"Thema: {analysis['thema']}")
-        if analysis.get('stimmung'):
-            analysis_parts.append(f"Stimmung: {analysis['stimmung']}")
-        if analysis.get('kontext'):
-            analysis_parts.append(f"Kontext: {analysis['kontext']}")
-        
+        if analysis.get('topic'):
+            analysis_parts.append(f"Topic: {analysis['topic']}")
+        if analysis.get('mood'):
+            analysis_parts.append(f"Mood: {analysis['mood']}")
+        if analysis.get('context'):
+            analysis_parts.append(f"Context: {analysis['context']}")
+
         if analysis_parts:
-            parts.append("Analyse:\n" + "\n".join(analysis_parts))
-    
+            parts.append("Analysis:\n" + "\n".join(analysis_parts))
+
     if transcript:
-        parts.append(f"Transkript: {transcript}")
+        parts.append(f"Transcript: {transcript}")
     
     return "\n\n".join(parts) if parts else ""
 
@@ -232,19 +232,33 @@ def enroll_person(name: str = None):
                     detected_name = analysis['name']
                     print(f"🏷️ Name aus Analyse erkannt: {detected_name}")
             
-            # Fallback: Pattern matching im Transkript falls kein Name in Analyse
+            # Fallback: pattern matching in the transcript if no name from analysis.
+            # The capture group allows 1-3 whitespace-separated name parts and uses
+            # Unicode word characters so multi-part and non-Western names
+            # (e.g. "Wei Ming", "Nur Aisyah", "李明") are captured, not just a
+            # single Latin first name.
             if not detected_name:
+                # First token: any letters (covers lowercase transcripts and CJK).
+                # Continuation tokens must start uppercase so trailing stop-words
+                # like "and"/"from" are excluded while multi-part names
+                # ("Wei Ming", "Nur Aisyah", "Tan Ah Kow") are kept intact.
+                first_tok = r"[^\W\d_]+(?:[-'’][^\W\d_]+)?"
+                cont_tok = r"[A-ZÀ-Þ][^\W\d_]*(?:[-'’][^\W\d_]+)?"
+                name_group = rf"({first_tok}(?:\s+{cont_tok}){{0,2}})"
+                # Longer triggers first so "i'm called" wins over "i'm".
+                # Trigger phrases are case-insensitive via scoped (?i:...); the
+                # name group stays case-sensitive so the uppercase anchor holds.
                 patterns = [
-                    r"(?:ich heiße|mein name ist|ich bin)\s+([A-Z][a-zäöüß]+)",
-                    r"(?:i am|my name is|i'm)\s+([A-Z][a-z]+)",
-                    r"(?:hallo|hi)\s+([A-Z][a-zäöüß]+)",
+                    rf"(?i:my name is|i'm called|this is|i am|i'm)\s+{name_group}",
+                    rf"(?i:ich heiße|mein name ist|ich bin)\s+{name_group}",
+                    rf"(?i:hello|hi|hey),?\s+(?i:i'm|i am)\s+{name_group}",
                 ]
-                
+
                 for pattern in patterns:
-                    match = re.search(pattern, transcript, re.IGNORECASE)
+                    match = re.search(pattern, transcript, re.UNICODE)
                     if match:
                         detected_name = match.group(1).strip()
-                        print(f"🏷️ Name erkannt: {detected_name}")
+                        print(f"🏷️ Name detected: {detected_name}")
                         break
                     
     except Exception as e:

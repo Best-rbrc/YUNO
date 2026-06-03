@@ -186,30 +186,29 @@ class RizzMode:
             style = self.gender_settings[gender]["style"]
             approach = self.gender_settings[gender]["approach"]
             
-            # DEUTSCH: Extrem strikte Formatvorgabe für OpenAI, damit IMMER nur echtes JSON kommt!
             prompt = (
-                "Gib deine Antwort AUSSCHLIESSLICH als gültiges JSON-Objekt aus – OHNE jede Einleitung, Erklärung, Nachsatz, Kommentar, keine Markdown-Blöcke. Nur das JSON!\n"
+                "Output your response EXCLUSIVELY as a valid JSON object – WITHOUT any introduction, explanation, follow-up, comment, or markdown blocks. JSON only!\n"
                 'Format:\n'
                 '{\n'
-                '  "opener": "Dein Anmachspruch oder Gesprächsöffner (konkret, situativ)",\n'
-                '  "body_language": "Körpersprache-Tipp (präzise Handlung, keine Allgemeinplätze)",\n'
-                '  "conversation": "Gesprächsverlauf-Tipp (2-3 konkrete Fragen/Leitfäden)",\n'
-                '  "confidence_boosters": "Selbstbewusstseins-Booster (praktische, sofort anwendbare Micro-Aktionen)",\n'
-                '  "red_flags": "Was du vermeiden solltest (konkret, fallbezogen)"\n'
+                '  "opener": "Your pickup line or conversation opener (concrete, situational)",\n'
+                '  "body_language": "Body language tip (precise action, no generalities)",\n'
+                '  "conversation": "Conversation flow tip (2-3 concrete questions/guides)",\n'
+                '  "confidence_boosters": "Confidence booster (practical, immediately applicable micro-actions)",\n'
+                '  "red_flags": "What you should avoid (concrete, situation-specific)"\n'
                 '}\n'
-                f'Die Person wurde als {gender} erkannt (Sicherheit {confidence:.1f}%). '
-                'Liefere mindestens 3 präzise, respektvolle, SITUATIVE Flirttipps im angegebenen Format. '
-                'Vermeide generische Floskeln wie "sei du selbst" oder "sei freundlich". '
-                'Nutze abwechslungsreiche Formulierungen und vermeide Wiederholungen früherer Antworten. '
-                'Nutze detailreiche, bildhafte Sprache (aber kurz und präzise), z. B. konkrete Beobachtungen (Lächeln, Outfit, Energie), '
-                'offene Fragen mit Tiefe und kleine spielerische Herausforderungen. '
-                'Alle Inhalte bitte auf Deutsch.'
+                f'The person was detected as {gender} (confidence {confidence:.1f}%). '
+                'Provide at least 3 precise, respectful, SITUATIONAL flirting tips in the given format. '
+                'Avoid generic phrases like "be yourself" or "be friendly". '
+                'Use varied phrasing and avoid repeating previous responses. '
+                'Use detailed, vivid language (but short and precise), e.g. concrete observations (smile, outfit, energy), '
+                'open-ended questions with depth and small playful challenges. '
+                'All content in English.'
             )
 
             response = client.chat.completions.create(
                 model="gpt-4o-mini",
                 messages=[
-                    {"role": "system", "content": "Du bist ein professioneller Wingman. Du gibst präzise, situative, respektvolle und abwechslungsreiche Flirttipps auf Deutsch."},
+                    {"role": "system", "content": "You are a professional wingman. You give precise, situational, respectful, and varied flirting tips in English."},
                     {"role": "user", "content": prompt}
                 ],
                 temperature=1.0,
@@ -226,10 +225,9 @@ class RizzMode:
                 import json
                 tips = json.loads(tips_text)
             except json.JSONDecodeError:
-                # Keine Fallback-Tipps mehr! Stattdessen Fehler-Meldung für Sprachmodul
                 return {
                     "enabled": False,
-                    "error": "OpenAI lieferte keine gültige Tipps-Struktur! KI-Antwort konnte nicht verarbeitet werden.",
+                    "error": "OpenAI did not return a valid tips structure! AI response could not be processed.",
                     "raw_response": tips_text
                 }
             

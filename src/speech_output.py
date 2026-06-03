@@ -74,14 +74,14 @@ def generate_and_speak_greeting(person_data: dict):
         speak(reminder_text)
         
     except Exception as e:
-        print(f"⚠️ Fehler beim Generieren der Erinnerung: {e}")
+        print(f"⚠️ Error generating the reminder: {e}")
         # Fallback
         if name and name != "unknown":
-            speak(f"Das ist {name}.")
+            speak(f"This is {name}.")
         else:
-            speak("Person erkannt, aber keine Details verfügbar.")
+            speak("Person recognized, but no details available.")
 
 
 def speak_unknown_person():
-    """Meldet eine unbekannte Person (ohne Eintragen in Datenbank)."""
-    speak("Unbekannte Person erkannt.")
+    """Announce an unknown person (without adding to the database)."""
+    speak("Unknown person detected.")

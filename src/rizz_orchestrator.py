@@ -27,18 +27,18 @@ def run_rizz_pipeline():
     # Step 1: Take a photo using rizz_mode (ensures temp storage)
     rizz = create_rizz_mode()
     if not rizz:
-        speak('Rizz Mode konnte nicht initialisiert werden. Bitte überprüfen Sie die DeepFace-Installation.')
+        speak('Rizz Mode could not be initialized. Please check the DeepFace installation.')
         return
-    
+
     result = rizz.capture_and_analyze(timeout=5)
     if not result or not result.get('success'):
-        speak("Es konnte kein Gesicht erkannt werden oder die Analyse ist fehlgeschlagen.")
+        speak("No face could be detected or the analysis failed.")
         return
 
     face_path = result.get('face_path')
     frame = cv2.imread(face_path)
     if frame is None:
-        speak("Das erkannte Gesicht konnte nicht geladen werden.")
+        speak("The detected face could not be loaded.")
         return
     
     # Step 2: Recognize person (ArcFace embedding, DB lookup)
@@ -61,48 +61,44 @@ def run_rizz_pipeline():
             person_data = get_person_by_id(match["person_id"])
     
     # Step 3: Output context if person known, otherwise generic
-    gender = result.get('gender', '').capitalize() if result.get('gender') else 'Unbekannt'
-    # Map to proper German plural labels for speech
+    gender = result.get('gender', '').capitalize() if result.get('gender') else 'Unknown'
     if gender.lower() == 'man':
-        gender_speech = 'Männer'
+        gender_speech = 'men'
     elif gender.lower() == 'woman':
-        gender_speech = 'Frauen'
+        gender_speech = 'women'
     else:
         gender_speech = gender
     tips_data = result.get('tips', {})
 
     if is_known and person_data:
-        # Known user: Speak full context, then generate personalized pickup advice
         generate_and_speak_greeting(person_data)
-        # Optional: Add a pause or extra context
-        speak(f"Hier sind einige Flirt-Tipps für {gender_speech}.")
+        speak(f"Here are some flirting tips for {gender_speech}.")
         if isinstance(tips_data, dict) and tips_data.get('enabled', True) and tips_data.get('tips'):
             _speak_tips_block(tips_data['tips'])
         elif isinstance(tips_data, dict) and tips_data.get('error'):
-            speak(f"Fehler: {tips_data['error']}")
+            speak(f"Error: {tips_data['error']}")
         else:
-            speak("Keine spezifischen Tipps verfügbar.")
+            speak("No specific tips available.")
     else:
-        # Unknown user: announce, give generic gender-based tips
         speak_unknown_person()
-        speak(f"Hier sind allgemeine Flirt-Tipps für {gender_speech}.")
+        speak(f"Here are some general flirting tips for {gender_speech}.")
         if isinstance(tips_data, dict) and tips_data.get('enabled', True) and tips_data.get('tips'):
             _speak_tips_block(tips_data['tips'])
         elif isinstance(tips_data, dict) and tips_data.get('error'):
-            speak(f"Fehler: {tips_data['error']}")
+            speak(f"Error: {tips_data['error']}")
         else:
-            speak("Keine spezifischen Tipps verfügbar.")
+            speak("No specific tips available.")
 
 
 def _speak_tips_block(tips: dict):
     """Speaks all keys/sections from the OpenAI-generated tips dict (in order)."""
     key_order = ['opener', 'body_language', 'conversation', 'confidence_boosters', 'red_flags']
     separator_map = {
-        'opener':            "Anmachspruch:",
-        'body_language':     "Körpersprache:",
-        'conversation':      "Gesprächstipps:",
-        'confidence_boosters': "Selbstvertrauen stärken:",
-        'red_flags':         "Was zu vermeiden ist:",
+        'opener':              "Opener:",
+        'body_language':       "Body language:",
+        'conversation':        "Conversation tips:",
+        'confidence_boosters': "Confidence boosters:",
+        'red_flags':           "What to avoid:",
     }
     for key in key_order:
         if tips.get(key):
