@@ -14,7 +14,7 @@ import os
 import sys
 from src.person_manager import enroll_person, identify_person
 from src.sync_manager import SyncManager
-from src.camera_manager import take_photo, check_camera_available
+from src.camera_manager import check_camera_available
 
 # Demo-Modus Funktionen importieren
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -38,31 +38,6 @@ rizzmode_activated = False
 def is_rizzmode_activated():
     """Return True if Rizz Mode is activated (placeholder, always False)."""
     return rizzmode_activated
-
-
-# Photo capture during button mode
-photo_capture_active = False
-photo_capture_lock = threading.Lock()
-
-def photo_capture_loop(interval_seconds: float = 10.0):
-    """Periodically take photos while button listener is active."""
-    global photo_capture_active
-    photo_dir = os.path.join("data", "photos_button")
-    os.makedirs(photo_dir, exist_ok=True)
-
-    while True:
-        with photo_capture_lock:
-            if not photo_capture_active:
-                break
-
-        try:
-            timestamp = time.strftime("%Y%m%d_%H%M%S")
-            photo_path = os.path.join(photo_dir, f"button_{timestamp}.jpg")
-            take_photo(photo_path)
-        except Exception:
-            pass
-
-        time.sleep(interval_seconds)
 
 
 # Raspberry Pi Button Handler
@@ -267,8 +242,6 @@ class ButtonHandler:
 
 def start_button_listener():
     """Startet den Button-Listener für Raspberry Pi"""
-    global photo_capture_active
-
     print("🎛️ Memory Assistant - Button-Modus")
     print("=" * 50)
     print("Button:")
@@ -296,17 +269,10 @@ def start_button_listener():
 
     button_handler = ButtonHandler(button_pin=17)
 
-    # Start photo capture thread (photos every 10 seconds)
-    photo_capture_active = True
-    photo_thread = threading.Thread(target=photo_capture_loop, args=(10.0,), daemon=True)
-    photo_thread.start()
-
     try:
         # Endlos-Schleife - Button wird über Interrupts (Callbacks) verarbeitet
         while True:
             time.sleep(0.1)
     except KeyboardInterrupt:
         print("\n\n👋 Programm beendet")
-        with photo_capture_lock:
-            photo_capture_active = False
         button_handler.cleanup()
