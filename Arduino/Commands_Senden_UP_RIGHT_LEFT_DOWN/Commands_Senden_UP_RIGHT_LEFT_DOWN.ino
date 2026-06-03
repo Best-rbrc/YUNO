@@ -1,5 +1,5 @@
 #include <Arduino.h>
-#include <WiFiNINA.h>
+#include <WiFiNINA.h>  // Arduino UNO WiFi Rev2 (NINA-W102 Modul)
 #include <PubSubClient.h>
 #include <LiquidCrystal.h>
 
@@ -14,7 +14,7 @@ const int swPin = 7;   // Joystick Button
 // -------------------- WLAN + MQTT SETTINGS --------------------
 const char* WIFI_SSID     = "Robin";
 const char* WIFI_PASSWORD = "12345678";
-const char* MQTT_HOST     = "172.20.10.2";
+const char* MQTT_HOST     = "172.20.10.11";  // Pi 2 (WaveShare) — Mosquitto broker
 const uint16_t MQTT_PORT  = 1883;
 
 const char* TOPIC_IN  = "pi/to/arduino";
