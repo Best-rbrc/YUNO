@@ -884,11 +884,11 @@
     
     <script>
         // Configuration
-        const SUPABASE_URL = 'https://dbixececjdtbomjeuxwe.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRiaXhlY2VjamR0Ym9tamV1eHdlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE3MzEzMjgsImV4cCI6MjA3NzMwNzMyOH0.zXqtJSMiLNwc2V0N71NR1HJ2W7jY6GBJAFfgs2qs9NE';
+        const SUPABASE_URL = 'https://pkfktebcugzldkxezaiz.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_au_QjriTE0WpkhG7RurHug_MTsLoXFC';
 
-        // Initialize Supabase client
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        // Initialize Supabase client (renamed `supabase` → `sb` to avoid Safari "shadows global" error)
+        const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         // Show Dashboard
         function showDashboard() {
@@ -924,7 +924,7 @@
             if (!storageInfo) return photoUrl;
 
             try {
-                const { data, error } = await supabase.storage
+                const { data, error } = await sb.storage
                     .from(storageInfo.bucket)
                     .createSignedUrl(storageInfo.path, 3600);
 
@@ -949,7 +949,7 @@
             const container = document.getElementById('personsContainer');
 
             try {
-                const { data: persons, error } = await supabase
+                const { data: persons, error } = await sb
                     .from('persons')
                     .select('*');
 
@@ -1140,7 +1140,7 @@
             }
 
             try {
-                const { data, error } = await supabase
+                const { data, error } = await sb
                     .from('persons')
                     .update({
                         name: newName,
@@ -1205,7 +1205,7 @@
             if (!currentPersonData) return;
 
             try {
-                const { error } = await supabase
+                const { error } = await sb
                     .from('persons')
                     .delete()
                     .eq('id', currentPersonData.id);
