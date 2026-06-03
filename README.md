@@ -14,7 +14,7 @@ Yuno is an intelligent face recognition system that helps you remember people an
 
 - **Face Recognition**: ArcFace ONNX model with 512-dimensional embeddings and cosine similarity matching
 - **Dual Raspberry Pi Architecture**: Independent systems syncing via Supabase (no direct Pi-to-Pi communication)
-- **Button-Controlled Operation**: Physical buttons for enrollment and identification (Raspberry Pi 1)
+- **Button-Controlled Operation**: Single button with multi-press/hold for enroll, identify, rizz and sync (Raspberry Pi 1)
 - **Interactive Display**: 64x64 pixel art slideshow with quiz mode (Raspberry Pi 2)
 - **Audio Feedback**: Text-to-speech via OpenAI TTS-1 or offline pyttsx3
 - **Cloud Sync**: Supabase PostgreSQL database and cloud storage for photos/audio
@@ -272,8 +272,11 @@ python main.py button
 ```bash
 # Run in button mode (wait for GPIO button press)
 python main.py button
-# Press Normal Button (GPIO 17) → Identify
-# Press Heartbeat Button (GPIO 27) → Enroll
+# Single button (GPIO 17):
+#   1x Press  → Enroll
+#   2x Press  → Identify
+#   3x Press  → Rizz Mode
+#   Hold      → Sync
 ```
 
 **Raspberry Pi 2 (WaveShare Display)**:
