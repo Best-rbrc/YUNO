@@ -50,7 +50,8 @@ This folder contains the core logic for camera capture, face recognition, identi
 - **OpenCV (`cv2`)**: Image processing, camera capture, face detection
 - **ONNX Runtime (`onnxruntime`)**: Runs ArcFace model for face embeddings
 - **ArcFace ONNX Model (`w600k_r50.onnx`)**: Pre-trained face recognition model generating 512-dimensional embeddings
-- **Haar Cascade**: Fast frontal face detection (from OpenCV)
+- **YuNet (`cv2.FaceDetectorYN`)**: CNN-based face detector — robust across ethnicities and head poses, light enough for a Raspberry Pi (auto-downloaded)
+- **Haar Cascade**: Legacy frontal face detector (from OpenCV), kept as an automatic fallback
 - **DeepFace**: Multi-task facial analysis (gender, age, emotion, race)
 
 ### Audio Processing
@@ -112,7 +113,7 @@ This folder contains the core logic for camera capture, face recognition, identi
 
 **Key Features**:
 - **ArcFace Model**: State-of-the-art face recognition with 512-dimensional embeddings
-- **Haar Cascade Detection**: Fast face detection with configurable strictness
+- **YuNet Detection**: CNN-based face detection (`cv2.FaceDetectorYN`), robust across ethnicities/poses; falls back to Haar Cascade if YuNet is unavailable
 - **Face Validation**: Multi-criteria validation to reduce false positives:
   - Aspect ratio check (0.6-1.5)
   - Minimum size threshold (100x100 pixels)
@@ -125,7 +126,8 @@ This folder contains the core logic for camera capture, face recognition, identi
 
 **Technologies Used**:
 - **ONNX Runtime**: Efficient model inference
-- **OpenCV Haar Cascade**: `haarcascade_frontalface_default.xml`
+- **YuNet (`cv2.FaceDetectorYN`)**: Primary CNN detector (`face_detection_yunet_2023mar.onnx`)
+- **OpenCV Haar Cascade**: `haarcascade_frontalface_default.xml` (fallback)
 - **NumPy**: Embedding normalization and array operations
 
 **Model Specifications**:
@@ -134,9 +136,8 @@ This folder contains the core logic for camera capture, face recognition, identi
 - Normalization: L2 (unit vector)
 
 **Detection Parameters**:
-- Scale factor: 1.1
-- Min neighbors: 7 (higher = fewer false positives)
-- Min size: 100×100 pixels
+- YuNet score threshold: 0.6 · NMS threshold: 0.3
+- Haar fallback — scale factor: 1.1, min neighbors: 7 (higher = fewer false positives), min size: 100×100 pixels
 
 ---
 
@@ -587,7 +588,7 @@ data/
    - Auto-brightness adjustment
    
 2. **Multi-Face Detection**
-   - Haar Cascade detects all faces
+   - YuNet detects all faces (Haar Cascade fallback)
    - Quality validation for each face
    - Bounding boxes extracted
    
@@ -839,10 +840,13 @@ pip install tf-keras
 
 1. **Detection Strictness**:
    ```python
-   # Increase minNeighbors to reduce false positives
+   # YuNet (primary): raise the score threshold to reduce false positives
+   YUNET_SCORE_THRESHOLD = 0.6  # Higher = stricter
+
+   # Haar Cascade (fallback): raise minNeighbors to reduce false positives
    faces = self.face_cascade.detectMultiScale(
-       gray, 
-       scaleFactor=1.1, 
+       gray,
+       scaleFactor=1.1,
        minNeighbors=7,  # Default: 7, Higher = stricter
        minSize=(100, 100)  # Minimum face size
    )

@@ -126,6 +126,7 @@ HandsOnHCI/
 │
 ├── models/                            # Pre-trained models
 │   ├── w600k_r50.onnx                 # ArcFace face recognition model (required)
+│   ├── face_detection_yunet_2023mar.onnx  # YuNet face detector (auto-downloaded)
 │   └── README.md                      # Model information and download links
 │
 ├── data/                              # Local data storage (auto-created)
@@ -420,7 +421,7 @@ Features:
 
 ### Key Technologies
 - **Face Recognition**: ArcFace ONNX (w600k_r50 model)
-- **Face Detection**: OpenCV with Haar cascades
+- **Face Detection**: YuNet CNN detector (`cv2.FaceDetectorYN`), with OpenCV Haar cascade fallback
 - **Gender/Age Detection**: DeepFace with TensorFlow backend
 - **Cloud Backend**: Supabase (PostgreSQL + Storage)
 - **AI Services**: OpenAI (Whisper, GPT-4o-mini, TTS-1)

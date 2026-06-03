@@ -8,6 +8,7 @@ import cv2
 import numpy as np
 import onnxruntime as ort
 import os
+import urllib.request
 from pathlib import Path
 
 
@@ -22,6 +23,34 @@ ALTERNATIVE_MODELS = [
     "newFaceDetection/models/arcface_v2.onnx"
 ]
 INPUT_SIZE = (112, 112)  # ArcFace standard input size
+
+# YuNet face detector (CNN-based) — far more robust across ethnicities and
+# poses than the legacy Haar Cascade, which has a documented bias against
+# non-frontal and East/South-East Asian faces. Tiny (~230 KB) and fast enough
+# for a Raspberry Pi. Auto-downloaded on first use; Haar Cascade is the fallback.
+YUNET_MODEL_PATH = "models/face_detection_yunet_2023mar.onnx"
+YUNET_MODEL_URL = (
+    "https://github.com/opencv/opencv_zoo/raw/main/models/"
+    "face_detection_yunet/face_detection_yunet_2023mar.onnx"
+)
+YUNET_SCORE_THRESHOLD = 0.6   # detection confidence cutoff
+YUNET_NMS_THRESHOLD = 0.3
+YUNET_TOP_K = 5000
+
+
+def _ensure_yunet_model(path: str = YUNET_MODEL_PATH):
+    """Return path to the YuNet model, downloading it if missing. None on failure."""
+    if os.path.exists(path):
+        return path
+    try:
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        print("⬇️  Downloading YuNet face detection model (~230 KB)...")
+        urllib.request.urlretrieve(YUNET_MODEL_URL, path)
+        print("✅ YuNet model downloaded")
+        return path
+    except Exception as e:
+        print(f"⚠️ Could not download YuNet model: {e}")
+        return None
 
 
 class ArcFaceRecognizer:
@@ -53,11 +82,39 @@ class ArcFaceRecognizer:
         print("✅ ArcFace model loaded")
         print(f"   Input: {self.input_name}")
         print(f"   Output: {self.output_name}")
-        
-        # Face detector (Haar Cascade - simple but fast)
+
+        # Face detector setup: prefer YuNet (robust across ethnicities/poses),
+        # fall back to Haar Cascade if YuNet is unavailable.
+        self.detector_backend = None
+        self.yunet = None
+
+        if hasattr(cv2, "FaceDetectorYN"):
+            yunet_path = _ensure_yunet_model()
+            if yunet_path:
+                try:
+                    self.yunet = cv2.FaceDetectorYN.create(
+                        yunet_path, "", (320, 320),
+                        YUNET_SCORE_THRESHOLD, YUNET_NMS_THRESHOLD, YUNET_TOP_K
+                    )
+                    # Self-test: some OpenCV builds can create the detector but
+                    # fail to actually run inference (e.g. broken DNN backend).
+                    # Run one real detect() so we fall back to Haar instead of
+                    # crashing on the first camera frame.
+                    self._yunet_self_test()
+                    self.detector_backend = "yunet"
+                    print("✅ Using YuNet face detector (robust across ethnicities)")
+                except Exception as e:
+                    self.yunet = None
+                    print(f"⚠️ YuNet unavailable ({e}); falling back to Haar Cascade")
+
+        # Haar Cascade always loaded as a fallback
         self.face_cascade = cv2.CascadeClassifier(
             cv2.data.haarcascades + 'haarcascade_frontalface_default.xml'
         )
+        if self.detector_backend is None:
+            self.detector_backend = "haar"
+            print("⚠️ Using Haar Cascade face detector "
+                  "(less accurate on diverse/non-frontal faces)")
     
     def preprocess_face(self, face_img):
         """Preprocess face for ArcFace (112x112, normalized)"""
@@ -88,20 +145,50 @@ class ArcFaceRecognizer:
         
         return embedding[0]
     
+    def _yunet_self_test(self):
+        """Run one inference to confirm this OpenCV build can actually execute
+        YuNet. Raises if inference fails so the caller can fall back to Haar."""
+        dummy = np.full((320, 320, 3), 127, dtype=np.uint8)
+        self.yunet.setInputSize((320, 320))
+        self.yunet.detect(dummy)
+
     def detect_faces(self, frame):
-        """Detect faces in frame using Haar Cascade with stricter parameters"""
+        """Detect faces in frame. Returns a list of (x, y, w, h) tuples.
+        Uses YuNet when available, otherwise Haar Cascade."""
+        if self.detector_backend == "yunet" and self.yunet is not None:
+            return self._detect_faces_yunet(frame)
+        return self._detect_faces_haar(frame)
+
+    def _detect_faces_yunet(self, frame):
+        """Detect faces with the YuNet CNN detector."""
+        h, w = frame.shape[:2]
+        # YuNet needs the input size set to the actual frame size each call
+        self.yunet.setInputSize((w, h))
+        _, faces = self.yunet.detect(frame)
+        results = []
+        if faces is not None:
+            for f in faces:
+                # f = [x, y, w, h, 5x landmarks..., score]
+                x, y, fw, fh = int(f[0]), int(f[1]), int(f[2]), int(f[3])
+                x = max(0, x)
+                y = max(0, y)
+                results.append((x, y, fw, fh))
+        return results
+
+    def _detect_faces_haar(self, frame):
+        """Detect faces with the legacy Haar Cascade (fallback)."""
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         # Stricter parameters to reduce false positives:
-        # - minNeighbors=7 (höher = weniger false positives, aber kann echte Gesichter übersehen)
-        # - minSize=(100, 100) (größer = weniger kleine False Positives)
+        # - minNeighbors=7 (higher = fewer false positives, may miss real faces)
+        # - minSize=(100, 100) (larger = fewer small false positives)
         faces = self.face_cascade.detectMultiScale(
-            gray, 
-            scaleFactor=1.1, 
-            minNeighbors=7,  # Erhöht von 5 auf 7 für weniger False Positives
-            minSize=(100, 100),  # Erhöht von 80x80 auf 100x100
+            gray,
+            scaleFactor=1.1,
+            minNeighbors=7,
+            minSize=(100, 100),
             flags=cv2.CASCADE_SCALE_IMAGE
         )
-        return faces
+        return [tuple(int(v) for v in f) for f in faces]
     
     def is_valid_face(self, face_img, bbox):
         """
@@ -116,39 +203,48 @@ class ArcFaceRecognizer:
             bool: True if likely a real face, False otherwise
         """
         x, y, w, h = bbox
-        
+
+        # Basic shape sanity (applies to all backends)
+        if len(face_img.shape) != 3 or face_img.shape[2] != 3:
+            return False
+
+        # YuNet already filters detections by confidence score and NMS, so its
+        # boxes are trustworthy. Skipping the Haar-era heuristics below avoids
+        # wrongly rejecting valid faces (e.g. smaller or non-frontal faces in a
+        # crowd), while still keeping a minimal size guard.
+        if self.detector_backend == "yunet":
+            return face_img.shape[0] >= 32 and face_img.shape[1] >= 32
+
+        # --- Haar Cascade fallback: stricter validation to kill false positives ---
+
         # Check 1: Aspect ratio - faces are roughly square to slightly rectangular
         aspect_ratio = w / h
         if aspect_ratio < 0.6 or aspect_ratio > 1.5:
             # Too narrow or too wide - probably not a face
             return False
-        
+
         # Check 2: Size - faces should be reasonably sized
         face_area = w * h
         if face_area < 10000:  # Less than 100x100 pixels - probably too small
             return False
-        
-        # Check 3: Image dimensions - face image should have valid shape
-        if len(face_img.shape) != 3 or face_img.shape[2] != 3:
-            return False
-        
+
         # Check 4: Minimum dimensions
         if face_img.shape[0] < 50 or face_img.shape[1] < 50:
             return False
-        
+
         # Check 5: Basic image quality - check for very dark or very bright images
         gray = cv2.cvtColor(face_img, cv2.COLOR_BGR2GRAY)
         mean_brightness = np.mean(gray)
-        
+
         # Too dark or too bright - might be a false positive
         if mean_brightness < 20 or mean_brightness > 240:
             return False
-        
+
         # Check 6: Variance - real faces have texture, false positives might be uniform
         variance = np.var(gray)
         if variance < 100:  # Very uniform image - probably not a face
             return False
-        
+
         return True
     
 
@@ -302,7 +398,7 @@ def get_all_faces_from_frame(frame):
         else:
             # Debug: print why face was rejected
             aspect_ratio = w / h
-            print(f"   ⚠️ Gesicht bei ({x},{y}) verworfen: aspect={aspect_ratio:.2f}, size={w}x{h}")
+            print(f"   ⚠️ Face at ({x},{y}) rejected: aspect={aspect_ratio:.2f}, size={w}x{h}")
     
     return result
 

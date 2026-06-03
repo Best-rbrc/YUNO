@@ -1,5 +1,5 @@
 record_duration: 20
-language: "de"
+language: "en"
 photo_path: "data/photos/"
 audio_path: "data/audio/"
 database_path: "data/memory.db"
