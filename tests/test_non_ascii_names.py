@@ -6,7 +6,7 @@ pipeline that touch a person's name:
   2. the spoken-name detection regex in person_manager
   3. SQLite store + retrieve round-trip (database_handler)
 
-Run from the project root:  python tests/test_asian_names.py
+Run from the project root:  python tests/test_non_ascii_names.py
 Network, camera and ML models are NOT required.
 """
 import os

@@ -3,7 +3,7 @@ Speak Asian / non-ASCII names aloud through the real TTS path
 (src.speech_output.speak -> OpenAI gpt-4o-mini-tts -> pygame playback).
 
 Requires: config/.env with OPENAI_API_KEY, network access, working audio out.
-Run from the project root:  python tests/speak_asian_names.py
+Run from the project root:  python tests/speak_non_ascii_names.py
 """
 import os
 import sys
