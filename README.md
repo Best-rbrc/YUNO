@@ -1,119 +1,67 @@
-# Yuno – Smart Person Recognition & Memory Assistant
+# Yuno – Augmenting Human Memory in Social Contexts
 
-Yuno is an intelligent face recognition system that helps you remember people and their context. The project consists of two independent Raspberry Pi systems and a web frontend, all syncing through Supabase as the single source of truth.
+**Smart glasses that help you remember the people you meet.** Yuno recognizes a face in real time and gives you a short audio cue: who the person is and what you talked about last time.
 
-## What is Yuno?
-
-**Yuno Glasses Prototype** (Raspberry Pi 1): A portable wearable system with camera, microphone, and Bluetooth speaker that recognizes faces, recalls context about people, and provides audio feedbac and rizz through physical button interactions.
-
-**WaveShare Display Station** (Raspberry Pi 2): A 64x64 RGB LED matrix display showing pixel art portraits of recognized persons with an interactive quiz mode controlled via Arduino joystick.
-
-**Web Dashboard**: A simple browser-based interface for managing persons, viewing photos, and editing context information.
-
-## Key Features
-
-- **Face Recognition**: ArcFace ONNX model with 512-dimensional embeddings and cosine similarity matching
-- **Dual Raspberry Pi Architecture**: Independent systems syncing via Supabase (no direct Pi-to-Pi communication)
-- **Button-Controlled Operation**: Single button with multi-press/hold for enroll, identify, rizz and sync (Raspberry Pi 1)
-- **Interactive Display**: 64x64 pixel art slideshow with quiz mode (Raspberry Pi 2)
-- **Audio Feedback**: Text-to-speech via OpenAI TTS-1 or offline pyttsx3
-- **Cloud Sync**: Supabase PostgreSQL database and cloud storage for photos/audio
-- **Gender Detection**: DeepFace integration for demographic analysis
-- **Rizz Mode**: AI-powered social interaction tips based on person context
+📄 **Published at ACM DIS 2026 (Interactivity / Live Demo), Singapore**
+*Yuno: Augmenting Human Memory in Social Contexts Through Real-Time Face Recognition and Contextual Recall*
+[doi.org/10.1145/3802974.3808029](https://doi.org/10.1145/3802974.3808029)
 
 ---
 
-## Documentation Structure
+## How it works
 
-This project has **comprehensive documentation** across multiple README files:
+```
+ Glasses camera ──► YuNet face detection ──► ArcFace embedding (512-d) ──► cosine match
+                                                                              │
+     Bluetooth speaker ◄── OpenAI TTS ◄── GPT-4o-mini cue ◄── person context ◄┘
+                                          (name + last conversation)
+```
 
-### **[HARDWARE.md](HARDWARE.md)** - Complete Hardware Setup Guide
-Detailed hardware requirements and assembly instructions for:
-- **Raspberry Pi 1 (Yuno Glasses)**: Camera, microphone, Bluetooth speaker, physical buttons
-- **Raspberry Pi 2 (WaveShare Display)**: 64x64 RGB LED matrix, MQTT broker setup
-- **Arduino LCD Controller**: 16x2 display with joystick for quiz control
-- Network architecture, MQTT configuration, power requirements, and wiring diagrams
+Yuno consists of three parts that sync through Supabase as the single source of truth:
 
-👉 **Read HARDWARE.md for complete hardware setup instructions**
+- **Yuno Glasses** (Raspberry Pi 1): a wearable prototype with camera, microphone, Bluetooth speaker and a single button. It enrolls new people (photos + a spoken note about them), recognizes known faces and speaks a short reminder.
+- **Display Station** (Raspberry Pi 2): a 64×64 RGB LED matrix that shows pixel-art portraits of the people you've met, with a quiz mode controlled by an Arduino joystick to practice remembering names.
+- **Web Dashboard**: a browser interface for managing people, photos and context notes.
 
-### **[src/README.md](src/README.md)** - Backend Technical Documentation
-In-depth technical documentation for all backend modules:
-- Face recognition pipeline (ArcFace, embedding generation, matching)
-- Identity matching algorithms and similarity thresholds
-- Database schema and Supabase integration
-- OpenAI API integration (Whisper, GPT-4o-mini, TTS-1)
-- Audio recording and speech output systems
-- Button handler for Raspberry Pi GPIO
-- All 14 core modules with code examples and usage patterns
+## Key Features
 
-👉 **Read src/README.md for backend development and API details**
-
-### **[frontend/README.md](frontend/README.md)** - Web Frontend Documentation
-Complete guide to the web dashboard:
-- Vanilla JavaScript SPA architecture
-- Supabase client integration and authentication
-- Person management (CRUD operations)
-- Photo upload and signed URL generation
-- UI/UX design system and responsive layouts
-- Context parsing and display logic
-
-👉 **Read frontend/README.md for web interface development**
-
-### **[waveshare/README.md](waveshare/README.md)** - Display System Documentation
-WaveShare RGB LED matrix display system:
-- Pixel art generation and LED optimization
-- Multi-threaded architecture (display, MQTT, quiz, music)
-- Quiz mode with OpenAI question generation
-- MQTT joystick control integration
-- Background music and TTS narration
-- Configuration and operation modes
-
-👉 **Read waveshare/README.md for display system details**
+- **Real-time face recognition**: YuNet detection + ArcFace ONNX embeddings with cosine similarity matching, running on a Raspberry Pi
+- **Contextual recall**: spoken notes are transcribed (Whisper) and condensed into one short, useful cue (GPT-4o-mini)
+- **Hands-free interaction**: a single button with press patterns for enroll, identify and sync
+- **Audio feedback**: OpenAI TTS-1, or offline pyttsx3
+- **Distributed architecture**: two independent Raspberry Pis + web frontend synced via Supabase (PostgreSQL + storage), no direct Pi-to-Pi communication
+- **Memory training**: pixel-art slideshow and quiz mode on the LED display
 
 ## Quick Start
 
-1. Python 3.11 recommended
-2. Create and activate a virtual environment
 ```bash
-python -m venv venv
-source venv/bin/activate  # macOS/Linux
-# .\venv\Scripts\activate  # Windows PowerShell
-```
-3. Install dependencies
-```bash
-pip install -r requirements.txt
-# If DeepFace/TensorFlow errors occur:
-pip install tf-keras
-```
-4. Add configuration and keys
-- Create `config/.env` with:
-```
-OPENAI_API_KEY=sk-...
-SUPABASE_URL=https://YOUR-PROJECT.supabase.co
-SUPABASE_KEY=YOUR_SERVICE_ROLE_OR_ANON_KEY
-```
-- Ensure `config/settings.yaml` exists (language etc.). Example:
-```yaml
-language: 'de'
+python -m venv venv && source venv/bin/activate   # Python 3.11 recommended
+pip install -r requirements.txt                   # if DeepFace/TensorFlow errors: pip install tf-keras
+cp config/.env.example config/.env                # add OpenAI + Supabase keys
+python main.py enroll      # enroll a new person (photos + audio note)
+python main.py identify    # recognize and speak a reminder
+python main.py button      # Raspberry Pi button mode
 ```
 
-5. Run
-```bash
-python main.py enroll             # Enroll new person (audio+photos)
-python main.py identify           # Recognize and speak known persons
-python main.py identify_local     # Recognize (console only)
-python main.py add_face           # Add unknown faces (no audio)
-python main.py rizz               # Rizz Mode (camera → gender → tips)
-python main.py sync               # Sync local DB with Supabase
-python main.py button             # Raspberry Pi button mode
-```
+Full setup instructions are below. Hardware assembly is in [HARDWARE.md](HARDWARE.md).
+
+## Documentation
+
+- **[HARDWARE.md](HARDWARE.md)**: hardware setup for both Raspberry Pis and the Arduino controller (wiring, MQTT, power)
+- **[src/README.md](src/README.md)**: backend modules (recognition pipeline, matching thresholds, Supabase, OpenAI integration)
+- **[frontend/README.md](frontend/README.md)**: web dashboard
+- **[waveshare/README.md](waveshare/README.md)**: LED matrix display system and quiz mode
+
+## Experimental Features
+
+The codebase also contains research prototypes that are not part of the core memory-assistant experience: a DeepFace-based attribute-detection module and a "social tips" mode (`python main.py rizz`) that generates conversation suggestions. They were built for exploration and testing.
 
 ---
 
 ##  Repository Structure
 
 ```
-HandsOnHCI/
+yuno/
 ├── README.md                          # This file - project overview
 ├── HARDWARE.md                        # Complete hardware setup guide
 ├── requirements.txt                   # Python dependencies
@@ -208,8 +156,8 @@ HandsOnHCI/
 
 1. **Clone the repository**:
    ```bash
-   git clone https://github.com/Best-rbrc/HandsOnHCI.git
-   cd HandsOnHCI
+   git clone https://github.com/Best-rbrc/yuno.git
+   cd yuno
    ```
 
 2. **Create virtual environment**:
@@ -256,9 +204,6 @@ python main.py identify_local
 # Add face photos only (no audio/context)
 python main.py add_face
 
-# Rizz Mode (gender detection + social tips)
-python main.py rizz
-
 # Sync local database with Supabase
 python main.py sync
 
@@ -275,7 +220,7 @@ python main.py button
 # Single button (GPIO 17):
 #   1x Press  → Enroll
 #   2x Press  → Identify
-#   3x Press  → Rizz Mode
+#   3x Press  → Experimental mode
 #   Hold      → Sync
 ```
 
@@ -498,4 +443,4 @@ sudo reboot
 
 ---
 
-**Built with Love and Rizz for the Yuno Project**
+Built for the Yuno project at the University of St. Gallen · Presented at ACM DIS 2026
